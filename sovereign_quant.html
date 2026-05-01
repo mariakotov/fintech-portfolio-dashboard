@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Sovereign Quant | Risk Terminal</title>
+    <style>
+        /* CSS Variables for Swiss Institutional Design */
+        :root {
+            --bg-color: #050505;
+            --card-bg: #111111;
+            --text-main: #FFFFFF;
+            --text-muted: #888888;
+            --accent-blue: #00F0FF;
+            --accent-green: #00FF87;
+            --accent-red: #FF2A54;
+            --border-color: #222222;
+            --font-main: 'Inter', -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        /* Reset & Base */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Typography */
+        h1, h2, h3 { font-weight: 600; letter-spacing: -0.02em; }
+        .mono { font-family: var(--font-mono); }
+        .text-green { color: var(--accent-green); }
+        .text-red { color: var(--accent-red); }
+        .text-blue { color: var(--accent-blue); }
+
+        /* Grid Layout */
+        header {
+            height: 60px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background-color: var(--bg-color);
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            grid-template-rows: 1fr 250px;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr 200px;
+                overflow-y: auto;
+            }
+            body { overflow: auto; height: auto; min-height: 100vh; }
+        }
+
+        /* Cards & Panels */
+        .panel {
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-color);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .glass-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        /* Data Metrics */
+        .metric-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.1em; margin-bottom: 4px; }
+        .metric-value { font-size: 28px; font-weight: 300; font-family: var(--font-mono); display: flex; align-items: baseline; gap: 8px; }
+        .metric-sub { font-size: 14px; }
+
+        /* SVG Chart Container */
+        .chart-container {
+            flex-grow: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 300px;
+        }
+        svg { width: 100%; height: 100%; display: block; overflow: visible; }
+        
+        .chart-line { fill: none; stroke: var(--accent-blue); stroke-width: 2; vector-effect: non-scaling-stroke; }
+        .chart-projection { fill: none; stroke: var(--text-muted); stroke-width: 2; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+        .chart-fill { fill: url(#gradient); opacity: 0.2; }
+
+        /* Stress Test Slider */
+        .stress-test-container { margin-top: 24px; }
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin: 16px 0;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px; width: 16px;
+            border-radius: 50%;
+            background: var(--accent-red);
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(255,42,84,0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px;
+            cursor: pointer;
+            background: #333;
+            border-radius: 2px;
+        }
+
+        /* Live Terminal */
+        .terminal-panel {
+            grid-column: 1 / -1;
+            background-color: #000;
+            border-top: 1px solid var(--border-color);
+            padding: 16px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: #00FF87;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .term-line { opacity: 0; animation: fadeIn 0.3s forwards; }
+        .term-time { color: var(--text-muted); margin-right: 8px; }
+        .term-sys { color: var(--accent-blue); margin-right: 8px; }
+        .term-warn { color: var(--accent-red); }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        /* Animations */
+        .pulse { animation: pulseAnim 0.3s ease-out; }
+        @keyframes pulseAnim {
+            0% { color: var(--text-main); text-shadow: 0 0 0 transparent; }
+            50% { color: var(--accent-blue); text-shadow: 0 0 10px var(--accent-blue); }
+            100% { color: var(--text-main); text-shadow: 0 0 0 transparent; }
+        }
+
+        /* Error Overlay */
+        #errorOverlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5,5,5,0.9);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; backdrop-filter: blur(4px);
+        }
+        .spinner {
+            width: 40px; height: 40px; border: 3px solid #333;
+            border-top-color: var(--accent-red); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+    </style>
+    <!-- Importing Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1 style="font-size: 16px;">THE SOVEREIGN QUANT</h1>
+        </div>
+        <div class="mono" style="font-size: 12px; display: flex; gap: 16px;">
+            <span id="connStatus" class="text-green">● SYSTEM ONLINE</span>
+            <span id="clock">00:00:00 UTC</span>
+        </div>
+    </header>
+
+    <div class="main-grid">
+        
+        <!-- Sidebar Metrics -->
+        <aside class="panel">
+            <h2 style="font-size: 14px; margin-bottom: 24px; color: var(--text-muted);">RISK METRICS (BTC/USDT)</h2>
+            
+            <div class="glass-card">
+                <div class="metric-label">Live Price</div>
+                <div class="metric-value" id="livePrice">---</div>
+            </div>
+
+            <div class="glass-card">
+                <div class="metric-label">30-Tick Volatility (σ)</div>
+                <div class="metric-value"><span id="volatility">---</span><span class="metric-sub">%</span></div>
+            </div>
+
+            <div class="glass-card">
+                <div class="metric-label">Value at Risk (95% Confidence)</div>
+                <div class="metric-value text-red"><span id="varValue">---</span><span class="metric-sub">%</span></div>
+            </div>
+
+            <div class="stress-test-container">
+                <div style="display: flex; justify-content: space-between;">
+                    <div class="metric-label">Stress Simulator</div>
+                    <div class="mono text-red" id="stressLabel">-0.0%</div>
+                </div>
+                <input type="range" id="stressSlider" min="-20" max="20" step="0.5" value="0">
+                <div class="metric-label" style="margin-top: 16px;">Projected Stress VaR</div>
+                <div class="metric-value text-red" style="font-size: 20px;"><span id="stressVar">---</span><span class="metric-sub">%</span></div>
+            </div>
+        </aside>
+
+        <!-- Charting Engine -->
+        <main class="panel">
+            <div id="errorOverlay">
+                <div class="spinner"></div>
+                <div class="mono text-red" style="margin-bottom: 8px;">MARKET CONNECTIVITY OFFLINE</div>
+                <div class="metric-label">Switching to Simulated Last-Known-Good Data...</div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                <h2 style="font-size: 14px; color: var(--text-muted);">ALGORITHMIC PRICE PROJECTION (LINEAR REGRESSION)</h2>
+                <div class="metric-label">Past 30 Ticks <span style="color:#fff;">—</span> Projection (5 Ticks) <span style="color:var(--text-muted);">---</span></div>
+            </div>
+            
+            <div class="chart-container" id="chartContainer">
+                <svg preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="gradient" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.8"/>
+                            <stop offset="100%" stop-color="#00F0FF" stop-opacity="0.0"/>
+                        </linearGradient>
+                    </defs>
+                    <path id="chartFill" class="chart-fill" d=""></path>
+                    <path id="chartPath" class="chart-line" d=""></path>
+                    <path id="projPath" class="chart-projection" d=""></path>
+                    <!-- Current Price Marker -->
+                    <circle id="priceMarker" r="4" fill="#00F0FF"></circle>
+                </svg>
+            </div>
+        </main>
+
+        <!-- Live Terminal -->
+        <footer class="terminal-panel" id="terminal">
+            <div class="term-line"><span class="term-time">SYS</span> <span class="term-sys">[INIT]</span> Sovereign Quant Core initialized.</div>
+            <div class="term-line"><span class="term-time">SYS</span> <span class="term-sys">[NET]</span> Establishing WebSocket to wss://stream.binance.com:9443/ws/btcusdt@trade</div>
+        </footer>
+
+    </div>
+
+    <script>
+        /**
+         * The Sovereign Quant - Core Logic
+         * No external dependencies. Pure HTML5/JS/SVG.
+         */
+
+        const STATE = {
+            data: [], // Stores last 30 prices
+            maxDataPoints: 30,
+            projectionPoints: 5,
+            livePrice: 0,
+            stressMultiplier: 1.0,
+            isOffline: false
+        };
+
+        const DOM = {
+            price: document.getElementById('livePrice'),
+            volatility: document.getElementById('volatility'),
+            varValue: document.getElementById('varValue'),
+            stressLabel: document.getElementById('stressLabel'),
+            stressSlider: document.getElementById('stressSlider'),
+            stressVar: document.getElementById('stressVar'),
+            chartPath: document.getElementById('chartPath'),
+            chartFill: document.getElementById('chartFill'),
+            projPath: document.getElementById('projPath'),
+            priceMarker: document.getElementById('priceMarker'),
+            chartContainer: document.getElementById('chartContainer'),
+            terminal: document.getElementById('terminal'),
+            connStatus: document.getElementById('connStatus'),
+            errorOverlay: document.getElementById('errorOverlay')
+        };
+
+        // --- Terminal Logic ---
+        function logTerm(msg, type = 'sys') {
+            const time = new Date().toISOString().substring(11, 19);
+            const div = document.createElement('div');
+            div.className = 'term-line';
+            
+            let typeTag = `<span class="term-sys">[${type.toUpperCase()}]</span>`;
+            if(type === 'warn' || type === 'err') {
+                typeTag = `<span class="term-warn">[${type.toUpperCase()}]</span>`;
+            }
+            
+            div.innerHTML = `<span class="term-time">${time}</span> ${typeTag} ${msg}`;
+            DOM.terminal.appendChild(div);
+            
+            // Auto scroll
+            DOM.terminal.scrollTop = DOM.terminal.scrollHeight;
+            
+            // Keep terminal clean
+            if(DOM.terminal.childElementCount > 50) {
+                DOM.terminal.removeChild(DOM.terminal.firstChild);
+            }
+        }
+
+        // --- Clock ---
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toISOString().substring(11, 19) + ' UTC';
+        }, 1000);
+
+        // --- Math & Predictive Engine ---
+        function calculateMetrics() {
+            if(STATE.data.length < 2) return;
+
+            // 1. Returns
+            const returns = [];
+            for(let i=1; i<STATE.data.length; i++) {
+                returns.push((STATE.data[i] - STATE.data[i-1]) / STATE.data[i-1]);
+            }
+
+            // 2. Mean
+            const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+
+            // 3. Variance & Std Dev (Volatility)
+            const variance = returns.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / returns.length;
+            const stdDev = Math.sqrt(variance);
+            
+            // Annualized Volatility (assuming high-freq ticks, we'll scale it for display)
+            const displayVol = stdDev * 100 * Math.sqrt(252); 
+
+            // 4. Value at Risk (95% Confidence -> Z = 1.645)
+            // Modified by Stress Test
+            const var95 = (mean - (1.645 * stdDev)) * 100;
+            const stressedVar = var95 * (1 + (STATE.stressMultiplier - 1));
+
+            // Update DOM
+            DOM.volatility.innerText = displayVol.toFixed(2);
+            DOM.varValue.innerText = Math.abs(var95).toFixed(2);
+            DOM.stressVar.innerText = Math.abs(stressedVar).toFixed(2);
+        }
+
+        function linearRegression(y) {
+            let n = y.length;
+            let sum_x = 0, sum_y = 0, sum_xy = 0, sum_xx = 0;
+            
+            for (let i = 0; i < n; i++) {
+                sum_x += i;
+                sum_y += y[i];
+                sum_xy += (i * y[i]);
+                sum_xx += (i * i);
+            }
+            
+            const slope = (n * sum_xy - sum_x * sum_y) / (n * sum_xx - sum_x * sum_x);
+            const intercept = (sum_y - slope * sum_x) / n;
+            
+            return { slope, intercept };
+        }
+
+        // --- Custom SVG Charting Engine ---
+        function drawChart() {
+            if(STATE.data.length === 0) return;
+
+            // Use requestAnimationFrame for 60FPS rendering
+            requestAnimationFrame(() => {
+                const width = DOM.chartContainer.clientWidth;
+                const height = DOM.chartContainer.clientHeight;
+                
+                // Stress test adjusts the visible data array
+                const renderData = STATE.data.map(p => p * STATE.stressMultiplier);
+                
+                const minPrice = Math.min(...renderData) * 0.999;
+                const maxPrice = Math.max(...renderData) * 1.001;
+                const range = maxPrice - minPrice || 1;
+
+                const stepX = width / (STATE.maxDataPoints + STATE.projectionPoints - 1);
+                
+                // Generate Path Data
+                let dPath = "";
+                let dFill = "";
+                
+                renderData.forEach((price, index) => {
+                    const x = index * stepX;
+                    const y = height - ((price - minPrice) / range) * height;
+                    
+                    if (index === 0) {
+                        dPath += `M ${x},${y} `;
+                        dFill += `M ${x},${height} L ${x},${y} `;
+                    } else {
+                        dPath += `L ${x},${y} `;
+                        dFill += `L ${x},${y} `;
+                    }
+
+                    // Update Price Marker on last point
+                    if (index === renderData.length - 1) {
+                        DOM.priceMarker.setAttribute("cx", x);
+                        DOM.priceMarker.setAttribute("cy", y);
+                    }
+                });
+
+                // Complete Fill Path
+                const lastX = (renderData.length - 1) * stepX;
+                dFill += `L ${lastX},${height} Z`;
+
+                DOM.chartPath.setAttribute("d", dPath);
+                DOM.chartFill.setAttribute("d", dFill);
+
+                // Projection Engine
+                if(renderData.length > 5) {
+                    const { slope, intercept } = linearRegression(renderData);
+                    let pPath = `M ${lastX},${height - ((renderData[renderData.length-1] - minPrice)/range)*height} `;
+                    
+                    for(let i=1; i<=STATE.projectionPoints; i++) {
+                        const projIndex = renderData.length - 1 + i;
+                        const projVal = (slope * projIndex) + intercept;
+                        
+                        const px = projIndex * stepX;
+                        const py = height - ((projVal - minPrice) / range) * height;
+                        pPath += `L ${px},${py} `;
+                    }
+                    DOM.projPath.setAttribute("d", pPath);
+                }
+            });
+        }
+
+        // --- UI Interactions ---
+        DOM.stressSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            const sign = val > 0 ? '+' : '';
+            DOM.stressLabel.innerText = `${sign}${val.toFixed(1)}%`;
+            DOM.stressMultiplier = 1 + (val / 100);
+            
+            logTerm(`Stress Test adjusted: ${sign}${val.toFixed(1)}% drop/gain simulated.`, 'sys');
+            
+            calculateMetrics();
+            drawChart();
+        });
+
+        function pulseElement(el) {
+            el.classList.remove('pulse');
+            void el.offsetWidth; // Trigger reflow
+            el.classList.add('pulse');
+        }
+
+        // --- Data Fetching (Binance WebSocket + Fallback) ---
+        let ws;
+        function connectWebSocket() {
+            ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
+            
+            ws.onopen = () => {
+                logTerm('WebSocket Connected. Receiving Live Trade Ticks.', 'sys');
+                DOM.connStatus.innerText = '● LIVE STREAM (BINANCE)';
+                DOM.connStatus.className = 'text-green';
+                STATE.isOffline = false;
+                DOM.errorOverlay.style.display = 'none';
+            };
+
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                const price = parseFloat(msg.p);
+                
+                processNewPrice(price);
+            };
+
+            ws.onerror = (err) => {
+                logTerm('WebSocket Connection Error.', 'err');
+                handleOfflineFallback();
+            };
+
+            ws.onclose = () => {
+                logTerm('WebSocket Disconnected. Attempting reconnect...', 'warn');
+                setTimeout(connectWebSocket, 5000);
+            };
+        }
+
+        function processNewPrice(price) {
+            STATE.livePrice = price;
+            DOM.price.innerText = `$${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            pulseElement(DOM.price);
+
+            STATE.data.push(price);
+            if(STATE.data.length > STATE.maxDataPoints) {
+                STATE.data.shift();
+            }
+
+            calculateMetrics();
+            drawChart();
+        }
+
+        function handleOfflineFallback() {
+            if(STATE.isOffline) return;
+            STATE.isOffline = true;
+            
+            DOM.connStatus.innerText = '● OFFLINE (SIMULATED)';
+            DOM.connStatus.className = 'text-red';
+            DOM.errorOverlay.style.display = 'flex';
+            
+            logTerm('Activating Local Fallback Simulator.', 'sys');
+            
+            setTimeout(() => {
+                DOM.errorOverlay.style.display = 'none';
+                logTerm('Simulator Active. Generating Pseudo-Random Walk.', 'warn');
+                
+                // Start Simulator
+                let simPrice = 64000;
+                setInterval(() => {
+                    // Random walk with slight drift
+                    simPrice = simPrice * (1 + (Math.random() - 0.495) * 0.002);
+                    processNewPrice(simPrice);
+                }, 1000);
+            }, 2000);
+        }
+
+        // Bootstrap
+        logTerm('Bootstrapping UI Components...', 'sys');
+        
+        // Initial setup - populate with some fake data immediately so chart isn't empty
+        let basePrice = 64000;
+        for(let i=0; i<STATE.maxDataPoints; i++) {
+            basePrice = basePrice * (1 + (Math.random() - 0.5) * 0.002);
+            STATE.data.push(basePrice);
+        }
+        processNewPrice(basePrice);
+        
+        // Start live connection
+        connectWebSocket();
+
+        // Handle Window Resize for SVG scaling
+        window.addEventListener('resize', drawChart);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>חילוץ נתונים | FinBoard Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'], mono: ['Space Grotesk', 'monospace'] },
+                    colors: { navy: { 900: '#060B19', 800: '#0B132B', 700: '#14213D' }, neon: { blue: '#00F0FF', purple: '#7B2CBF', green: '#00FF87', red: '#FF2A54' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #060B19; color: #E2E8F0; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+        .bg-mesh { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 15% 50%, rgba(123, 44, 191, 0.08) 0%, transparent 50%), radial-gradient(circle at 85% 30%, rgba(0, 240, 255, 0.08) 0%, transparent 50%); z-index: -1; pointer-events: none; }
+        .glass-panel { background: rgba(11, 19, 43, 0.6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); }
+        
+        @media (min-width: 1024px) {
+            .sidebar-container { position: fixed; top: 2rem; right: 2rem; width: 280px; height: calc(100vh - 4rem); border-radius: 1.5rem; z-index: 50; }
+            .main-content { margin-right: calc(280px + 4rem); padding: 2rem; }
+        }
+        @media (max-width: 1023px) {
+            .sidebar-container { display: none; }
+            .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 80px; padding-bottom: env(safe-area-inset-bottom); z-index: 100; display: flex; justify-content: space-around; align-items: center; border-radius: 1.5rem 1.5rem 0 0; }
+            .main-content { padding: 1rem; padding-top: 5rem; padding-bottom: 100px; }
+            .mobile-header { position: fixed; top: 0; left: 0; right: 0; height: 70px; padding-top: env(safe-area-inset-top); z-index: 90; display: flex; justify-content: space-between; align-items: center; padding-left: 1rem; padding-right: 1rem; border-radius: 0 0 1.5rem 1.5rem; }
+        }
+
+        .nav-item { position: relative; transition: all 0.3s ease; overflow: hidden; }
+        .nav-item::before { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 3px; background: theme('colors.neon.blue'); opacity: 0; transition: opacity 0.3s ease; border-radius: 4px; }
+        .nav-item.active::before { opacity: 1; }
+        .nav-item.active { background: linear-gradient(90deg, rgba(0,240,255,0.1) 0%, transparent 100%); color: #fff; }
+        
+        .mobile-nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #64748b; transition: all 0.3s ease; }
+        .mobile-nav-item.active { color: theme('colors.neon.blue'); }
+        .mobile-nav-item.active svg { filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.5)); }
+
+        .form-input {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .form-input:focus {
+            background: rgba(0,240,255,0.05);
+            border-color: rgba(0,240,255,0.5);
+            box-shadow: 0 0 15px rgba(0,240,255,0.1);
+            outline: none;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; opacity: 0.7; }
+        .glow-btn { box-shadow: 0 0 20px rgba(0, 240, 255, 0.4); transition: all 0.3s ease; }
+        .glow-btn:hover:not(:disabled) { box-shadow: 0 0 30px rgba(0, 240, 255, 0.8); transform: translateY(-2px); }
+        .loader-ring { display: inline-block; width: 40px; height: 40px; border: 3px solid rgba(0,240,255,0.1); border-radius: 50%; border-top-color: #00F0FF; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="antialiased selection:bg-neon-blue selection:text-navy-900">
+
+    <div class="bg-mesh"></div>
+
+    <header class="mobile-header glass-panel lg:hidden">
+        <div class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple tracking-tight">FinBoard</div>
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-neon-blue to-neon-purple p-[2px]">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=transparent" alt="User" class="w-full h-full rounded-full bg-navy-800">
+        </div>
+    </header>
+
+    <aside class="sidebar-container glass-panel flex flex-col justify-between hidden lg:flex">
+        <div>
+            <div class="p-8 pb-6">
+                <div class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple tracking-tight mb-1">FinBoard</div>
+                <div class="text-xs text-slate-400 font-mono tracking-widest uppercase">Premium Edition</div>
+            </div>
+            <nav class="flex flex-col gap-2 px-4 mt-4">
+                <a href="index.html" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    דשבורד
+                </a>
+                <a href="portfolio.html" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    תיק השקעות
+                </a>
+                <a href="market.html" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                    גילוי שוק
+                </a>
+                <a href="analytics.html" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    ניתוח מתקדם
+                </a>
+                <a href="extract.html" class="nav-item active flex items-center gap-4 px-4 py-3 rounded-xl text-slate-300 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    חילוץ נתונים
+                </a>
+            </nav>
+        </div>
+    </aside>
+
+    <nav class="bottom-nav glass-panel lg:hidden">
+        <a href="index.html" class="mobile-nav-item">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            <span class="text-[10px] font-medium">דשבורד</span>
+        </a>
+        <a href="portfolio.html" class="mobile-nav-item">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+            <span class="text-[10px] font-medium">תיק</span>
+        </a>
+        <div class="relative -top-5">
+            <a href="market.html" class="flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-tr from-neon-blue to-neon-purple shadow-[0_0_20px_rgba(0,240,255,0.4)] text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+            </a>
+        </div>
+        <a href="analytics.html" class="mobile-nav-item">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            <span class="text-[10px] font-medium">ניתוח</span>
+        </a>
+        <a href="extract.html" class="mobile-nav-item active">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            <span class="text-[10px] font-medium">חילוץ</span>
+        </a>
+    </nav>
+
+    <main class="main-content">
+        <header class="mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">API חילוץ נתונים</h1>
+            <p class="text-slate-400 text-sm">משיכת נתונים היסטוריים וייצוא אוטומטי ל-Google Sheets / CSV</p>
+        </header>
+
+        <div class="glass-panel p-6 md:p-8 rounded-2xl max-w-4xl">
+            <form id="financeForm" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="flex flex-col">
+                    <label for="tickers" class="text-sm font-medium text-slate-300 mb-2">סימולי מניות (מופרדים בפסיק)</label>
+                    <input type="text" id="tickers" placeholder="AAPL, MSFT, TSLA" class="form-input px-4 py-3 rounded-xl font-mono dir-ltr text-left">
+                </div>
+                <div class="flex flex-col">
+                    <label for="frequency" class="text-sm font-medium text-slate-300 mb-2">תדירות דגימה</label>
+                    <select id="frequency" class="form-input px-4 py-3 rounded-xl">
+                        <option value="daily" class="bg-navy-800">יומית (Daily)</option>
+                        <option value="weekly" class="bg-navy-800">שבועית (Weekly)</option>
+                        <option value="monthly" class="bg-navy-800">חודשית (Monthly)</option>
+                    </select>
+                </div>
+                <div class="flex flex-col">
+                    <label for="startDate" class="text-sm font-medium text-slate-300 mb-2">תאריך התחלה</label>
+                    <input type="date" id="startDate" class="form-input px-4 py-3 rounded-xl font-mono">
+                </div>
+                <div class="flex flex-col">
+                    <label for="endDate" class="text-sm font-medium text-slate-300 mb-2">תאריך סיום</label>
+                    <input type="date" id="endDate" class="form-input px-4 py-3 rounded-xl font-mono">
+                </div>
+            </form>
+            
+            <div class="flex justify-center mb-8">
+                <button type="button" id="loadBtn" class="glow-btn bg-gradient-to-r from-neon-blue to-neon-purple text-white font-bold py-3.5 px-12 rounded-xl w-full sm:w-auto flex items-center justify-center gap-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    הפעל סקריפט חילוץ
+                </button>
+            </div>
+
+            <div id="alertContainer" class="hidden mb-6 p-4 bg-neon-red/10 border border-neon-red/30 rounded-xl text-neon-red flex items-start gap-3">
+                <div id="alertText" class="font-medium text-sm"></div>
+            </div>
+
+            <div id="loaderContainer" class="hidden flex-col items-center justify-center py-8">
+                <div class="loader-ring mb-4"></div>
+                <h3 id="loaderText" class="text-lg font-bold text-neon-blue">מתקשר ל-API...</h3>
+            </div>
+
+            <div id="previewContainer" class="hidden mt-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold text-white">תצוגה מקדימה של נתונים</h2>
+                </div>
+                <div class="overflow-x-auto bg-navy-900/50 rounded-xl border border-white/5">
+                    <table id="dataTable" class="min-w-full text-sm text-left dir-ltr"></table>
+                </div>
+            </div>
+
+            <div id="exportContainer" class="hidden mt-8 pt-8 border-t border-white/10">
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button type="button" id="btnCsv" class="flex-1 sm:max-w-xs bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-3">
+                        <svg class="w-5 h-5 text-neon-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        CSV Download
+                    </button>
+                    <button type="button" id="btnSheet" class="flex-1 sm:max-w-xs bg-neon-green/10 hover:bg-neon-green/20 border border-neon-green/30 text-neon-green font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        Export to Sheets
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbzw5AJcWno-v1PN8oM2dsw2U8iAoEF9wUIwFzekIe4VT1-tsyrkB-_W4BprbN9-1vaE/exec"; 
+        let globalCsvData = "";
+        const elTickers = document.getElementById('tickers'); const elStartDate = document.getElementById('startDate'); const elEndDate = document.getElementById('endDate'); const elFrequency = document.getElementById('frequency'); const loadBtn = document.getElementById('loadBtn'); const alertContainer = document.getElementById('alertContainer'); const alertText = document.getElementById('alertText'); const loaderContainer = document.getElementById('loaderContainer'); const loaderText = document.getElementById('loaderText'); const previewContainer = document.getElementById('previewContainer'); const dataTable = document.getElementById('dataTable'); const exportContainer = document.getElementById('exportContainer'); const btnCsv = document.getElementById('btnCsv'); const btnSheet = document.getElementById('btnSheet');
+
+        const showAlert = (msg) => { alertText.innerHTML = msg; alertContainer.classList.remove('hidden'); };
+        const hideAlert = () => alertContainer.classList.add('hidden');
+        const setUIState = (state) => { if (state === 'loading') { hideAlert(); previewContainer.classList.add('hidden'); exportContainer.classList.add('hidden'); loaderContainer.classList.remove('hidden'); loaderContainer.classList.add('flex'); loadBtn.disabled = true; } else { loaderContainer.classList.add('hidden'); loaderContainer.classList.remove('flex'); loadBtn.disabled = false; } };
+        const validateInputs = () => { const tickers = elTickers.value.trim(); const start = elStartDate.value; const end = elEndDate.value; if (!tickers) return "נא להזין לפחות סימול מניה אחד."; if (!start || !end) return "יש לבחור תאריכי התחלה וסיום."; if (new Date(start) > new Date(end)) return "אופס! נראה שתאריך ההתחלה מאוחר מתאריך הסיום..."; return null; };
+
+        const renderTable = (csvStr) => { 
+            const lines = csvStr.trim().split('\n'); 
+            const rowCount = Math.min(7, lines.length); 
+            let html = ''; 
+            for (let i = 0; i < rowCount; i++) { 
+                if (!lines[i]) continue; 
+                let rowData = lines[i].split(',').map(cell => cell.replace(/^"|"$/g, '')); 
+                if (i === 0) { 
+                    html += `<thead class="bg-navy-800 text-slate-300 uppercase text-xs tracking-wider border-b border-white/10"><tr>`; 
+                    rowData.forEach(cell => html += `<th class="px-4 py-3 font-bold">${cell}</th>`); 
+                    html += `</tr></thead><tbody class="divide-y divide-white/5">`; 
+                } else { 
+                    html += `<tr class="hover:bg-white/5 transition-colors">`; 
+                    rowData.forEach((cell, idx) => { 
+                        const isNumber = !isNaN(cell) && cell !== ""; 
+                        const colorClass = isNumber ? "text-neon-blue font-mono" : "text-slate-300 font-mono"; 
+                        html += `<td class="px-4 py-3 whitespace-nowrap text-xs ${colorClass}">${cell || '-'}</td>`; 
+                    }); 
+                    html += `</tr>`; 
+                } 
+            } 
+            html += `</tbody>`; 
+            dataTable.innerHTML = html; 
+        };
+
+        loadBtn.addEventListener('click', async () => { 
+            const validationError = validateInputs(); 
+            if (validationError) { showAlert(validationError); return; } 
+            setUIState('loading'); 
+            loaderText.innerText = "מושך נתוני שוק..."; 
+            const payload = { tickers: document.getElementById('tickers').value, startDate: document.getElementById('startDate').value, endDate: document.getElementById('endDate').value, frequency: document.getElementById('frequency').value, action: 'csv' }; 
+            try { 
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) }); 
+                if (!response.ok) throw new Error(`HTTP שגיאה: ${response.status}`); 
+                const data = await response.json(); 
+                if (data.status === 'success' && data.csvData) { 
+                    globalCsvData = data.csvData; 
+                    renderTable(globalCsvData); 
+                    setUIState('idle'); 
+                    previewContainer.classList.remove('hidden'); 
+                    exportContainer.classList.remove('hidden'); 
+                } else { throw new Error(data.message || "שגיאה לא ידועה התקבלה מהשרת."); } 
+            } catch (err) { setUIState('idle'); showAlert(`<strong>שגיאת תקשורת:</strong><br><span class="dir-ltr inline-block text-left">${err.message}</span>`); } 
+        });
+
+        btnCsv.addEventListener('click', () => { if (!globalCsvData) return; const blob = new Blob([globalCsvData], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `market_data_export_${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); });
+        btnSheet.addEventListener('click', async () => { 
+            if (validateInputs()) return; 
+            setUIState('loading'); 
+            loaderText.innerText = "מייצר גיליון Google Sheets במערכת..."; 
+            const payload = { tickers: elTickers.value, startDate: elStartDate.value, endDate: elEndDate.value, frequency: elFrequency.value, action: 'sheet' }; 
+            try { 
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) }); 
+                const data = await response.json(); 
+                if (data.status === 'success' && data.sheetUrl) { 
+                    setUIState('idle'); 
+                    exportContainer.innerHTML = `<div class="bg-neon-green/10 border border-neon-green/30 rounded-xl p-6 text-center shadow-[0_0_20px_rgba(0,255,135,0.1)]"><div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-neon-green/20 mb-3"><svg class="w-6 h-6 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div><h3 class="text-xl font-bold text-white mb-2">הגיליון נוצר בהצלחה!</h3><a href="${data.sheetUrl}" target="_blank" class="inline-flex items-center gap-2 bg-neon-green text-navy-900 font-bold py-2.5 px-6 rounded-lg transition-all hover:shadow-[0_0_15px_rgba(0,255,135,0.4)] mt-4">פתח גיליון <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg></a></div>`; 
+                    exportContainer.classList.remove('hidden'); 
+                } else { throw new Error(data.message || "Unknown error creating sheet."); } 
+            } catch (err) { setUIState('idle'); exportContainer.classList.remove('hidden'); showAlert(`<strong>שגיאה ביצירת הגיליון:</strong><br><span class="dir-ltr inline-block text-left">${err.message}</span>`); } 
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>גילוי שוק | FinBoard Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Outfit', 'sans-serif'], mono: ['Space Grotesk', 'monospace'] }, colors: { navy: { 900: '#060B19', 800: '#0B132B', 700: '#14213D' }, neon: { blue: '#00F0FF', purple: '#7B2CBF', green: '#00FF87', red: '#FF2A54' } } } } }
+    </script>
+    <style>
+        body { background-color: #060B19; color: #E2E8F0; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+        .bg-mesh { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 15% 50%, rgba(123, 44, 191, 0.08) 0%, transparent 50%), radial-gradient(circle at 85% 30%, rgba(0, 240, 255, 0.08) 0%, transparent 50%); z-index: -1; pointer-events: none; }
+        .glass-panel { background: rgba(11, 19, 43, 0.6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); }
+        
+        @media (min-width: 1024px) {
+            .sidebar-container { position: fixed; top: 2rem; right: 2rem; width: 280px; height: calc(100vh - 4rem); border-radius: 1.5rem; z-index: 50; }
+            .main-content { margin-right: calc(280px + 4rem); padding: 2rem; }
+        }
+        @media (max-width: 1023px) {
+            .sidebar-container { display: none; }
+            .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 80px; z-index: 100; display: flex; justify-content: space-around; align-items: center; border-radius: 1.5rem 1.5rem 0 0; }
+            .main-content { padding: 1rem; padding-top: 5rem; padding-bottom: 100px; }
+            .mobile-header { position: fixed; top: 0; left: 0; right: 0; height: 70px; z-index: 90; display: flex; justify-content: space-between; align-items: center; padding-left: 1rem; padding-right: 1rem; border-radius: 0 0 1.5rem 1.5rem; }
+        }
+
+        .nav-item { position: relative; transition: all 0.3s ease; overflow: hidden; }
+        .nav-item::before { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 3px; background: theme('colors.neon.blue'); opacity: 0; transition: opacity 0.3s ease; border-radius: 4px; }
+        .nav-item.active::before { opacity: 1; }
+        .nav-item.active { background: linear-gradient(90deg, rgba(0,240,255,0.1) 0%, transparent 100%); color: #fff; }
+        
+        .mobile-nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #64748b; transition: all 0.3s ease; }
+        .mobile-nav-item.active { color: theme('colors.neon.blue'); }
+        .mobile-nav-item.active svg { filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.5)); }
+        
+        .heatmap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 4px; }
+        .heatmap-cell { padding: 1rem; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: transform 0.2s; cursor: pointer; border: 1px solid rgba(255,255,255,0.05); }
+        .heatmap-cell:hover { transform: scale(1.05); z-index: 10; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body class="antialiased selection:bg-neon-blue selection:text-navy-900">
+    <div class="bg-mesh"></div>
+
+    <header class="mobile-header glass-panel lg:hidden">
+        <div class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple tracking-tight">FinBoard</div>
+    </header>
+
+    <aside class="sidebar-container glass-panel flex flex-col justify-between hidden lg:flex">
+        <div>
+            <div class="p-8 pb-6">
+                <div class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple tracking-tight mb-1">FinBoard</div>
+                <div class="text-xs text-slate-400 font-mono tracking-widest uppercase">Premium Edition</div>
+            </div>
+            <nav class="flex flex-col gap-2 px-4 mt-4">
+                <a href="index.html" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 font-medium"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg> דשבורד</a>
+                <a href="portfolio.html" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 font-medium"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 13V6a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h8m4-2v-4m2 2h-4"></path></svg> תיק השקעות</a>
+                <a href="market.html" class="nav-item active flex items-center gap-4 px-4 py-3 rounded-xl text-slate-300 font-medium"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> גילוי שוק</a>
+                <a href="analytics.html" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 font-medium"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg> ניתוח מתקדם</a>
+                <a href="extract.html" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 font-medium"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> חילוץ נתונים</a>
+            </nav>
+        </div>
+    </aside>
+
+    <nav class="bottom-nav glass-panel lg:hidden">
+        <a href="index.html" class="mobile-nav-item"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg><span class="text-[10px]">דשבורד</span></a>
+        <a href="portfolio.html" class="mobile-nav-item"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 13V6a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h8m4-2v-4m2 2h-4"></path></svg><span class="text-[10px]">תיק</span></a>
+        <div class="relative -top-5"><a href="market.html" class="flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-tr from-neon-blue to-neon-purple shadow-[0_0_20px_rgba(0,240,255,0.4)] text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></a></div>
+        <a href="analytics.html" class="mobile-nav-item"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg><span class="text-[10px]">ניתוח</span></a>
+        <a href="extract.html" class="mobile-nav-item"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg><span class="text-[10px]">חילוץ</span></a>
+    </nav>
+
+    <main class="main-content">
+        <header class="mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">גילוי שוק ומפות חום</h1>
+            <p class="text-slate-400 text-sm">זיהוי מגמות בזמן אמת לאורך כל מדדי השוק המובילים</p>
+        </header>
+
+        <div class="glass-panel p-6 rounded-2xl mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-bold text-white">S&P 500 Heatmap</h2>
+                <div class="flex gap-2">
+                    <button class="bg-navy-800 text-white px-3 py-1 rounded text-sm border border-white/10">1D</button>
+                    <button class="bg-neon-blue/20 text-neon-blue px-3 py-1 rounded text-sm border border-neon-blue/30">1W</button>
+                </div>
+            </div>
+            
+            <div class="heatmap-grid" dir="ltr">
+                <div class="heatmap-cell bg-emerald-500/80"><span class="font-bold">AAPL</span><span class="text-xs">+2.4%</span></div>
+                <div class="heatmap-cell bg-emerald-600/80"><span class="font-bold">MSFT</span><span class="text-xs">+1.8%</span></div>
+                <div class="heatmap-cell bg-red-500/80"><span class="font-bold">TSLA</span><span class="text-xs">-3.2%</span></div>
+                <div class="heatmap-cell bg-slate-700/80"><span class="font-bold">GOOG</span><span class="text-xs">0.0%</span></div>
+                <div class="heatmap-cell bg-emerald-400/80"><span class="font-bold">NVDA</span><span class="text-xs">+4.5%</span></div>
+                <div class="heatmap-cell bg-red-600/80"><span class="font-bold">AMZN</span><span class="text-xs">-1.1%</span></div>
+                <div class="heatmap-cell bg-emerald-500/80"><span class="font-bold">META</span><span class="text-xs">+2.1%</span></div>
+                <div class="heatmap-cell bg-red-400/80"><span class="font-bold">NFLX</span><span class="text-xs">-0.5%</span></div>
+            </div>
+        </div>
+
+        <div class="glass-panel p-6 rounded-2xl">
+            <h2 class="text-lg font-bold text-white mb-6">סקטורים מובילים</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-navy-800 rounded-xl flex justify-between items-center border border-white/5">
+                    <div class="flex items-center gap-3"><div class="w-2 h-8 bg-neon-green rounded"></div><span class="font-bold text-white">טכנולוגיה (XLK)</span></div>
+                    <span class="font-mono text-neon-green">+1.5%</span>
+                </div>
+                <div class="p-4 bg-navy-800 rounded-xl flex justify-between items-center border border-white/5">
+                    <div class="flex items-center gap-3"><div class="w-2 h-8 bg-neon-red rounded"></div><span class="font-bold text-white">פיננסים (XLF)</span></div>
+                    <span class="font-mono text-neon-red">-0.8%</span>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
